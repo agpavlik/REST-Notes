@@ -3,12 +3,14 @@
 - [What is API?](#1)
 - [What is REST?](#2)
 - [Ways to fetch data](#3)
+  - [XMLHttpRequest](#30)
   - [fetch() method](#31)
-  - [Async-Await ](#32)
+  - [Async-Await](#32)
   - [Axios library](#33)
   - [jQuery AJAX](#34)
   - [Custom Hook](#35)
   - [React Query library](#36)
+- [What is JSON](#4)
 
 ## 🔥 What is API? <a name="1"></a>
 
@@ -16,9 +18,12 @@ In simple terms, an `Application Programming Interface` is a set of protocols an
 
 ## 🔥 What is REST? <a name="2"></a>
 
-`REpresentational State Transfer`
+`REST` determines how the API looks like.
+`REST API` stands for `Representational State Transfer application programming interface`, sometimes referred to as the RESTful API, and it’s the primary interface that is used by React.js developers which allows API connections between different parts of an application or service over the internet. Developers can combine applications more efficiently and with greater versatility using REST APIs. Furthermore, it has become the technique that microservices systems employ the most frequently. Another thing that makes the REST API so beneficial is that there are no constraints on how data can be represented and transferred between servers, browsers, databases, and other networks.
 
-❗
+## 🔥 Ways to fetch data <a name="3"></a>
+
+### 🔥 XMLHttpRequest <a name="30"></a>
 
 Before ES6 and modern libraries like Fetch and Axios, `XMLHttpRequest` was the only way to make API calls in JavaScript. It's still widely used because it's supported by all browsers.
 
@@ -40,7 +45,7 @@ xhttpr.onload = () => {
 
 ### 🔥 fetch() method <a name="31"></a>
 
-Fetch is a method to call an API in JavaScript. The request can be of any APIs that return the data of the format JSON or XML. It returns a promise, which contains a single value, either response data or an error.
+Fetch is a JavaScript's buit-in method to call an API. The request can be of any APIs that return the data of the format JSON or XML. The fetch() require only one parameter which is the URL. It returns a promise, which contains a single value, either response data or an error. Respective type of data can be handle with various methods such as `json()`, `text()`, `blob()`, `formData()`, `arrayBuffer()`. In practice, you often can use the `async/await` with fetch() method.
 
 ```javascript
 function App() {
@@ -51,6 +56,32 @@ function App() {
   }, []);
 
   return <div>Data</div>;
+}
+```
+
+```javascript
+// fetch() with async/await
+async function fetchData() {
+  const response = await fetch("url");
+  const data = await response.json();
+
+  return data;
+}
+```
+
+```javascript
+//The `response` object provides the `status code` and `status text` via the `status` and `statusText` properties
+async function fetchData() {
+  const response = await fetch("url");
+
+  console.log(response.status); //200
+  console.log(response.statusText); //OK
+
+  if (response.status === 200) {
+    let data = await response.text();
+
+    return data;
+  }
 }
 ```
 
@@ -112,6 +143,16 @@ function App() {
 ```javascript
 import axios from "axios";
 
+async function fetchData() {
+  const response = await axios.get("url");
+  const data = response.data;
+  return data;
+}
+```
+
+```javascript
+import axios from "axios";
+
 axios
   .get("APIURL")
   .then((response) => {
@@ -150,6 +191,7 @@ $.ajax({
 It is a React component
 
 ```javascript
+// variant 1 with axios library
 const useFetch = (url) => {
   const [isLoading, setIsLoading] = useState(false);
   const [apiData, setApiData] = useState(null);
@@ -171,6 +213,34 @@ const useFetch = (url) => {
     };
     fetchData();
   }, [url]);
+
+  return { isLoading, apiData, serverError };
+};
+```
+
+```javascript
+// variant 2 with fetch method
+const useFetch = (url) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiData, setApiData] = useState(null);
+  const [serverError, setServerError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const resp = await fetch(url);
+        const data = await resp.json();
+
+        setApiData(data);
+      } catch (error) {
+        setServerError(error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   return { isLoading, apiData, serverError };
 };
@@ -214,4 +284,40 @@ function App() {
 
   return <div>Data</div>;
 }
+```
+
+```javascript
+import { useQuery } from "react-query";
+
+function App() {
+  const { isLoading, error, data } = useQuery("data", fetchData);
+  if (isLoading) return <p> Loading ... </p>;
+  if (error) return <p>Error: {error.message}</p>;
+
+  return (
+    <ul>
+      {data.map((item) => (
+        <li key={item.id}>{iten.name}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+## 🔥 What is JSON? <a name="4"></a>
+
+`JavaScript Object Notation` (JSON) is a standard text based data format used in web development to send and receive the data. It is supported by most programming languages and it's lightening fast. The popularity of JSON is continually growing, and now it’s most popular data exchange type. In JSON. the data are in key:value pairs with double quotes separated by a comma, just like JS object. JSON cannot contain functions.
+
+JSON is used everywhere:
+
+- Storing data in a database
+- Sending data between API endpoints.
+- Config files like package.json
+
+JSON methods in JS
+
+```javascript
+JSON.parse(); // takes JSON string and convert into JS object
+
+JSON.stringify(); // convert JS object into string
 ```
