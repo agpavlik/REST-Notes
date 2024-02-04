@@ -10,7 +10,7 @@
 - [Ways to fetch data](#3)
   - [XMLHttpRequest](#30)
   - [fetch() method](#31)
-  - [Async-Await](#32)
+  - [Async-Await in fetch()](#32)
   - [Axios library](#33)
   - [jQuery AJAX](#34)
   - [Custom Hook](#35)
@@ -131,8 +131,11 @@ Fetch is a JavaScript's buit-in method to call an API. The request can be of any
 
 Respective type of data can be handle with various methods such as `json()`, `text()`, `blob()`, `formData()`, `arrayBuffer()`. In practice, you often can use the `async/await` with fetch() method.
 
+> Example 1
+
+GET request
+
 ```javascript
-// GET request
 import React, { useState, useEffect } from "react";
 // useState to store data retrieve from the API
 // useEffect allows to fetch data as soon as the application loads
@@ -171,8 +174,9 @@ const App = () => {
 };
 ```
 
+POST request
+
 ```javascript
-// POST request
 //  It works similarly to the GET request, the main difference being that you need to add the method and two additional parameters to the optional object (body and header)
 
 import React, { useState, useEffect } from "react";
@@ -235,22 +239,63 @@ const addPosts = async (title, body) => {
           <button type="submit">Add Post</button>
         </form>
       </div>
-      {/* ... */}
     </div>
   );
 };
 ```
 
-```javascript
+DELETE request
 
+```javascript
+// This gets triggered when the button is clicked, and we get the id of the specific post in which the button was clicked. Then we remove that data from the entire retuned data.
+const deletePost = async (id) => {
+  await fetch(`https://jsonplaceholder.typicode.com/posts/${id}`, {
+    method: "DELETE",
+  }).then((response) => {
+    if (response.status === 200) {
+      setPosts(
+        posts.filter((post) => {
+          return post.id !== id;
+        })
+      );
+    } else {
+      return;
+    }
+  });
+};
+
+// This will be removed from the API but not immediately from the UI, which is why we have added a filter to remove the data as well. For each item in the loop, your delete button will look like this:
+const App = () => {
+  // ...
+  return (
+    <div className="posts-container">
+      {posts.map((post) => {
+        return (
+          <div className="post-card" key={post.id}>
+            <div className="button">
+              <div className="delete-btn" onClick={() => deletePost(post.id)}>
+                Delete
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+```
+
+> Example 2
+
+```javascript
 fetch('Api_address')
 .then(response => {
   if (response.ok){
     return response.json(); // Parse the response data as JSON
   } else {
-    trhrow new Error("API request failed")
+    throw new Error("API request failed")
   }
-  . then(data => {
+  .then(data => {
     // Process the response data here
     console.log(data)
   })
@@ -261,7 +306,7 @@ fetch('Api_address')
 })
 ```
 
-### 🔥 Async-Await <a name="32"></a>
+### 🔥 Async-Await in fetch() <a name="32"></a>
 
 It is the preferred way of fetching the data from an API as it enables to remove .then() callbacks and return asynchronously resolved data. In the async block, we can use Await function to wait for promise.
 
