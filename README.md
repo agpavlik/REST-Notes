@@ -132,7 +132,7 @@ Fetch is a JavaScript's buit-in method to call an API. The request can be of any
 Respective type of data can be handle with various methods such as `json()`, `text()`, `blob()`, `formData()`, `arrayBuffer()`. In practice, you often can use the `async/await` with fetch() method.
 
 ```javascript
-//GET request
+// GET request
 import React, { useState, useEffect } from "react";
 // useState to store data retrieve from the API
 // useEffect allows to fetch data as soon as the application loads
@@ -172,29 +172,73 @@ const App = () => {
 ```
 
 ```javascript
-// fetch() with async/await
-async function fetchData() {
-  const response = await fetch("url");
-  const data = await response.json();
+// POST request
+//  It works similarly to the GET request, the main difference being that you need to add the method and two additional parameters to the optional object (body and header)
 
-  return data;
-}
-```
+import React, { useState, useEffect } from "react";
+const App = () => {
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  // ...
+};
 
-```javascript
-//The `response` object provides the `status code` and `status text` via the `status` and `statusText` properties
-async function fetchData() {
-  const response = await fetch("url");
+const addPosts = async (title, body) => {
+  // It expects these data from a form or whatever
+  await fetch("https://jsonplaceholder.typicode.com/posts", {
+    method: "POST",
+    body: JSON.stringify({
+      //The body holds the data we want to pass into the API, which we must first stringify because we are sending data to a web server.
+      title: title,
+      body: body,
+      userId: Math.random().toString(36).slice(2),
+    }),
+    headers: {
+      //The header tells us the type of data, which is always the same when consuming REST API's.
+      "Content-type": "application/json; charset=UTF-8",
+    },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      // We also set the state to hold the new data and distribute the remaining data into the array.
+      setPosts((posts) => [data, ...posts]);
+      setTitle("");
+      setBody("");
+    })
+    .catch((err) => {
+      console.log(err.message);
+    });
 
-  console.log(response.status); //200
-  console.log(response.statusText); //OK
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    addPosts(title, body);
+  };
 
-  if (response.status === 200) {
-    let data = await response.text();
-
-    return data;
-  }
-}
+  return (
+    <div className="app">
+      <div className="add-post-container">
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            className="form-control"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
+          <textarea
+            name=""
+            className="form-control"
+            id=""
+            cols="10"
+            rows="8"
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+          ></textarea>
+          <button type="submit">Add Post</button>
+        </form>
+      </div>
+      {/* ... */}
+    </div>
+  );
+};
 ```
 
 ```javascript
@@ -219,7 +263,7 @@ fetch('Api_address')
 
 ### 🔥 Async-Await <a name="32"></a>
 
-It is the preferred way of fetching the data from an API as it enables to remove .then() callbacks and return asynchronously resolved data. In the async block, we ccan use Await function to wait for promise.
+It is the preferred way of fetching the data from an API as it enables to remove .then() callbacks and return asynchronously resolved data. In the async block, we can use Await function to wait for promise.
 
 ```javascript
 function App() {
@@ -234,6 +278,32 @@ function App() {
     })();
   });
   return <div>Data</div>;
+}
+```
+
+```javascript
+// fetch() with async/await
+async function fetchData() {
+  const response = await fetch("url");
+  const data = await response.json();
+
+  return data;
+}
+```
+
+```javascript
+//The `response` object provides the `status code` and `status text` via the `status` and `statusText` properties
+async function fetchData() {
+  const response = await fetch("url");
+
+  console.log(response.status); //200
+  console.log(response.statusText); //OK
+
+  if (response.status === 200) {
+    let data = await response.text();
+
+    return data;
+  }
 }
 ```
 
