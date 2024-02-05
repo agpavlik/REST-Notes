@@ -8,13 +8,26 @@
   - [How REST APIs work?](#20)
   - [REST design principles](#21)
 - [Ways to fetch data](#3)
+
   - [XMLHttpRequest](#30)
   - [fetch() method](#31)
   - [Async-Await in fetch()](#32)
+
+    - [example 1 with fetch()](#311)
+    - [example 2 with fetch()](#312)
+    - [example 3 with fetch()](#313)
+    - [example 4 with fetch()](#314)
+
   - [Axios library](#33)
+
+    - [example 1 with Axios](#332)
+    - [example 2 with Axios](#332)
+
   - [jQuery AJAX](#34)
   - [Custom Hook](#35)
   - [React Query library](#36)
+    - [example 1 with React Query](#361)
+
 - [What is JSON?](#4)
 - [What is CRUD?](#5)
 
@@ -127,11 +140,46 @@ xhttpr.onload = () => {
 
 ### 🔥 fetch() method <a name="31"></a>
 
-Fetch is a JavaScript's buit-in method to call an API. The request can be of any APIs that return the data of the format JSON or XML. The fetch() require only one parameter which is the URL. It returns a promise, which contains a single value, either response data or an error. You can handle success or failure using the `then()` and `catch()` methods.
+Fetch is a JavaScript's buit-in method to call an API. The request can be of any APIs that return the data of the format JSON or XML. The fetch() require only one parameter which is the URL. It returns a promise, which contains a single value, either response data or an error. You can handle success or failure using the `then()` and `catch()` methods. Respective type of data can be handle with various methods such as `json()`, `text()`, `blob()`, `formData()`, `arrayBuffer()`. In practice, you often can use the `async/await` with fetch() method.
 
-Respective type of data can be handle with various methods such as `json()`, `text()`, `blob()`, `formData()`, `arrayBuffer()`. In practice, you often can use the `async/await` with fetch() method.
+`GET request`
 
-> Example 1
+```javascript
+function App() {
+  useEffect(() => { //useEffect allows to fetch data as soon as the application loads and avoid a side effect
+    fetch("url", {method:"GET"}) // method: "GET" - default, so we can ignore it
+      .then((response) => response.json()); // Parse the response data as JSON
+      .then((data) => console.log(data)); // Process the response data here
+      .catch((err) => console.log(err.message)); // This method handle promise rejection
+  }, []);
+
+  return data;
+}
+```
+
+`POST request`
+It works similarly to the GET request, the main difference being that you need to add the method and two additional parameters to the optional object (body and header)
+
+```javascript
+function App() { // It expects data from a form or whatever which will be send to server
+    fetch("url", {
+      method:"POST",
+      headers: {
+      "Content-type": "application/json; charset=UTF-8",
+      }, //The header tells us the type of data, which is always the same when consuming REST API's.
+      body: JSON.stringify({ message: 'Hello World!' })
+    } ) //The body holds the data we want to pass into the API, which we must first stringify because we are sending data to a web server.
+      .then((response) => response.json());
+      .then((data) => console.log(data)); // Process the response data here
+      .catch((err) => console.log(err.message));
+
+  return data;
+}
+
+
+```
+
+### 🔥 example 1 with fetch() <a name="311"></a>
 
 GET request
 
@@ -143,7 +191,7 @@ import React, { useState, useEffect } from "react";
 const App = () => {
   const [posts, setPosts] = useState([]); // create state to store the data retrieve from the API
   useEffect(() => {
-    fetch("https://jsonplaceholder.typicode.com/posts?_limit=10") // method: "GET" - default, so we can ignore
+    fetch("https://jsonplaceholder.typicode.com/posts?_limit=10")
       .then((response) => response.json()) // It returns a response object, which isn't what we want. So we need to resolve the response object to JSON format
       .then((data) => {
         // This also returns a promise for us to get the actual data using the second .then().
@@ -177,8 +225,6 @@ const App = () => {
 POST request
 
 ```javascript
-//  It works similarly to the GET request, the main difference being that you need to add the method and two additional parameters to the optional object (body and header)
-
 import React, { useState, useEffect } from "react";
 const App = () => {
   const [title, setTitle] = useState("");
@@ -285,46 +331,255 @@ const App = () => {
 };
 ```
 
-> Example 2
+### 🔥 example 2 with fetch() <a name="312"></a>
+
+Example - [Pizzolino](https://github.com/agpavlik/Pizzolino)
 
 ```javascript
-fetch('Api_address')
-.then(response => {
-  if (response.ok){
-    return response.json(); // Parse the response data as JSON
-  } else {
-    throw new Error("API request failed")
+const API_URL = "https://react-fast-pizza-api.onrender.com/api";
+
+// GET
+export async function getMenu() {
+  const res = await fetch(`${API_URL}/menu`);
+
+  // fetch won't throw error on 400 errors (e.g. when URL is wrong), so we need to do it manually. This will then go into the catch block, where the message is set
+  if (!res.ok) throw Error("Failed getting menu");
+
+  const { data } = await res.json();
+  return data;
+}
+
+export async function getOrder(id) {
+  const res = await fetch(`${API_URL}/order/${id}`);
+  if (!res.ok) throw Error(`Couldn't find order #${id}`);
+
+  const { data } = await res.json();
+  return data;
+}
+
+// POST
+export async function createOrder(newOrder) {
+  try {
+    const res = await fetch(`${API_URL}/order`, {
+      method: "POST",
+      body: JSON.stringify(newOrder),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) throw Error();
+    const { data } = await res.json();
+    return data;
+  } catch {
+    throw Error("Failed creating your order");
   }
-  .then(data => {
-    // Process the response data here
-    console.log(data)
-  })
-  .catch(error => {
-   // Handle error here
-   console.error(error)
-  })
-})
+}
+
+// PATCH
+export async function updateOrder(id, updateObj) {
+  try {
+    const res = await fetch(`${API_URL}/order/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(updateObj),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) throw Error();
+    // We don't need the data, so we don't return anything
+  } catch (err) {
+    throw Error("Failed updating your order");
+  }
+}
+```
+
+### 🔥 example 3 with fetch() <a name="313"></a>
+
+Example - [use-Popcorn](https://github.com/agpavlik/Udemy-use-popcorn)
+
+```javascript
+// search movie
+
+import { useState, useEffect } from "react";
+
+const KEY = "f84fc31d";
+
+export function useMovies(query) {
+  const [movies, setMovies] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(
+    function () {
+      // callback?.();
+
+      const controller = new AbortController(); // clean app fetch | clean app current request each time when new one comes in
+
+      async function fetchMovies() {
+        try {
+          setIsLoading(true);
+          setError("");
+          const res = await fetch(
+            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
+            { signal: controller.signal } // clean app current request each time when new one comes in
+          );
+
+          if (!res.ok)
+            throw new Error("Something went wrong with fetching movies"); // error
+
+          const data = await res.json();
+
+          if (data.Response === "False") throw new Error("Movie not found");
+
+          setMovies(data.Search);
+          setError("");
+        } catch (err) {
+          if (err.name !== "AbortError") {
+            console.log(err.message);
+            setError(err.message);
+          }
+        } finally {
+          setIsLoading(false); // change isLoading back to false
+        }
+      }
+
+      if (query.length < 3) {
+        setMovies([]);
+        setError("");
+        return;
+      }
+
+      // handleCloseMovie(); // close current movie if fetch another one
+
+      fetchMovies();
+
+      return function () {
+        controller.abort(); // clean app current request each time when new one comes in
+      };
+    },
+    [query]
+  );
+
+  return { movies, isLoading, error };
+}
+```
+
+### 🔥 example 4 with fetch() <a name="314"></a>
+
+Example - [Map-Marker](https://github.com/agpavlik/Map-Marker)
+
+```javascript
+function CitiesProvider({ children }) {
+  const [{ cities, isLoading, currentCity, error }, dispatch] = useReducer(
+    reducer,
+    initialState
+  );
+
+  // Fetch the cities list data
+  useEffect(function () {
+    async function fetchCities() {
+      dispatch({ type: "loading" });
+
+      try {
+        const res = await fetch(`${BASE_URL}/cities`);
+        const data = await res.json();
+        dispatch({ type: "cities/loaded", payload: data });
+      } catch {
+        dispatch({
+          type: "rejected",
+          payload: "There was an error loading cities...",
+        });
+      }
+    }
+    fetchCities();
+  }, []);
+
+  // Fetch data regarding the exact city
+  // useCallback prevents infinite loops
+  const getCity = useCallback(
+    async function getCity(id) {
+      if (Number(id) === currentCity.id) return;
+
+      dispatch({ type: "loading" });
+
+      try {
+        const res = await fetch(`${BASE_URL}/cities/${id}`);
+        const data = await res.json();
+        dispatch({ type: "city/loaded", payload: data });
+      } catch {
+        dispatch({
+          type: "rejected",
+          payload: "There was an error loading the city...",
+        });
+      }
+    },
+    [currentCity.id]
+  );
+
+  // Add new city from the Form to the server
+  async function createCity(newCity) {
+    dispatch({ type: "loading" });
+
+    try {
+      const res = await fetch(`${BASE_URL}/cities`, {
+        method: "POST",
+        body: JSON.stringify(newCity),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+
+      dispatch({ type: "city/created", payload: data });
+    } catch {
+      dispatch({
+        type: "rejected",
+        payload: "There was an error creating the city...",
+      });
+    }
+  }
+
+  // Delete the exact city
+  async function deleteCity(id) {
+    dispatch({ type: "loading" });
+
+    try {
+      await fetch(`${BASE_URL}/cities/${id}`, {
+        method: "DELETE",
+      });
+
+      dispatch({ type: "city/deleted", payload: id });
+    } catch {
+      dispatch({
+        type: "rejected",
+        payload: "There was an error deleting the city...",
+      });
+    }
+  }
+
+  return (
+    <CitiesContext.Provider
+      value={{
+        cities,
+        isLoading,
+        currentCity,
+        error,
+        getCity,
+        createCity,
+        deleteCity,
+      }}
+    >
+      {children}
+    </CitiesContext.Provider>
+  );
+}
 ```
 
 ### 🔥 Async-Await in fetch() <a name="32"></a>
 
 It is the preferred way of fetching the data from an API as it enables to remove .then() callbacks and return asynchronously resolved data. In the async block, we can use Await function to wait for promise.
-
-```javascript
-function App() {
-  useEffect(() => {
-    (async () => {
-      try {
-        const result = await axios.get("https://site.com/");
-        console.log(result.data);
-      } catch (error) {
-        console.error(error);
-      }
-    })();
-  });
-  return <div>Data</div>;
-}
-```
 
 ```javascript
 // fetch() with async/await
@@ -335,6 +590,84 @@ async function fetchData() {
   return data;
 }
 ```
+
+> Example 1
+
+```javascript
+// To use async/await, first call async in the function. Then when making a request and expecting a response, add the await syntax in front of the function to wait until the promise settles with the result.
+
+import React, { useState, useEffect } from 'react';
+
+const App = () => {
+   const [title, setTitle] = useState('');
+   const [body, setBody] = useState('');
+   const [posts, setPosts] = useState([]);
+
+   // GET with fetch API
+   useEffect(() => {
+      const fetchPost = async () => {
+         const response = await fetch(
+            'https://jsonplaceholder.typicode.com/posts?_limit=10'
+         );
+         const data = await response.json();
+         console.log(data);
+         setPosts(data);
+      };
+      fetchPost();
+   }, []);
+
+   // DELETE with fetch API
+   const deletePost = async (id) => {
+      let response = await fetch(
+         `https://jsonplaceholder.typicode.com/posts/${id}`,
+         {
+            method: 'DELETE',
+         }
+      );
+      if (response.status === 200) {
+         setPosts(
+            posts.filter((post) => {
+               return post.id !== id;
+            })
+         );
+      } else {
+         return;
+      }
+   };
+
+   // POST with fetch API
+   const addPosts = async (title, body) => {
+      let response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+         method: 'POST',
+         body: JSON.stringify({
+            title: title,
+            body: body,
+            userId: Math.random().toString(36).slice(2),
+         }),
+         headers: {
+            'Content-type': 'application/json; charset=UTF-8',
+         },
+      });
+      let data = await response.json();
+      setPosts((posts) => [data, ...posts]);
+      setTitle('');
+      setBody('');
+   };
+
+   const handleSubmit = (e) => {
+      e.preventDefault();
+      addPosts(title, body);
+   };
+
+   return (
+      // ...
+   );
+};
+
+export default App;
+```
+
+> Example 2
 
 ```javascript
 //The `response` object provides the `status code` and `status text` via the `status` and `statusText` properties
@@ -355,15 +688,14 @@ async function fetchData() {
 ### 🔥 Axios library <a name="33"></a>
 
 Axios is an open-source library for making HTTP requests to servers. It is a promise-based approach. It supports all modern browsers and is used in real-time applications. It is easy to install using the npm package manager. With Axios, we can easily send asynchronous HTTP requests to REST APIs and perform create, read, update and delete operations.
+Unlike the Fetch API method, no option is required to declare the method. We simply attach the method to the instance and query it.
 
 ```javascript
 function App() {
   useEffect(() => {
-    axios
-      .get("https://site.com/")
-      .then((response) => console.log(response.data));
+    axios.get("url").then((response) => console.log(response.data));
   }, []);
-  return <div>Data</div>;
+  return data;
 }
 ```
 
@@ -389,6 +721,180 @@ axios
   .catch((error) => {
     // Handle error here
   });
+```
+
+> Example 1
+
+```javascript
+// GET request
+useEffect(() => {
+  client.get("?_limit=10").then((response) => {
+    setPosts(response.data);
+  });
+}, []);
+
+// POST request
+const addPosts = (title, body) => {
+  client
+    .post("", {
+      title: title,
+      body: body,
+    })
+    .then((response) => {
+      setPosts((posts) => [response.data, ...posts]);
+    });
+};
+
+// DELETE request
+const deletePost = (id) => {
+  client.delete(`${id}`);
+  setPosts(
+    posts.filter((post) => {
+      return post.id !== id;
+    })
+  );
+};
+```
+
+> Example 2
+
+We can use async/await to write less code and avoid the .then() chaining. When we use async/await, all of our Axios requests will look like this:
+
+```javascript
+import React, { useState, useEffect } from 'react';
+
+const App = () => {
+   const [title, setTitle] = useState('');
+   const [body, setBody] = useState('');
+   const [posts, setPosts] = useState([]);
+
+   // GET with Axios
+   useEffect(() => {
+      const fetchPost = async () => {
+         let response = await client.get('?_limit=10');
+         setPosts(response.data);
+      };
+      fetchPost();
+   }, []);
+
+   // Delete with Axios
+   const deletePost = async (id) => {
+      await client.delete(`${id}`);
+      setPosts(
+         posts.filter((post) => {
+            return post.id !== id;
+         })
+      );
+   };
+
+   // Post with Axios
+   const addPosts = async (title, body) => {
+      let response = await client.post('', {
+         title: title,
+         body: body,
+      });
+      setPosts((posts) => [response.data, ...posts]);
+   };
+
+   const handleSubmit = (e) => {
+      e.preventDefault();
+      addPosts(title, body);
+   };
+
+   return (
+      // ...
+   );
+};
+
+export default App;
+```
+
+> Example 3
+
+```javascript
+//App.js
+
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import "./App.css";
+
+function App() {
+  const [data, setData] = useState();
+
+  useEffect(() => {
+    axios
+      .get("http://localhost:5000/api/products")
+      .then((response) => {
+        setData(response.data);
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  }, []);
+
+  return (
+    <div className="App">
+      {
+        <div className="products">
+          {data?.map((data) => {
+            return (
+              <div key={data.id}>
+                <img className="img" src={data.image} alt="img" />
+                <h1>{data.name}</h1>
+                <p>{data.description}</p>
+              </div>
+            );
+          })}
+        </div>
+      }
+    </div>
+  );
+}
+export default App;
+```
+
+### 🔥 example 1 with Axios <a name="331"></a>
+
+### 🔥 example 2 with Axios <a name="332"></a>
+
+Example - [Photolabs](https://github.com/agpavlik/Photolabs)
+
+```javascript
+const getPhotosByTopic = (topicId) => {
+  console.log("topicId", topicId);
+  axios
+    .get(`/api/topics/photos/${topicId}`)
+    .then((res) => {
+      console.log("res", res);
+      dispatch({
+        type: ACTIONS.GET_PHOTOS_BY_TOPIC,
+        payload: { photos: res.data },
+      });
+    })
+    .catch((e) => {
+      console.log("Error fetching photos by topic:", e);
+    });
+};
+
+useEffect(() => {
+  axios
+    .get("/api/photos")
+    .then((res) => {
+      dispatch({ type: ACTIONS.ALL_PHOTOS, payload: { photos: res.data } });
+    })
+    .catch((e) => {
+      console.log("Error fetching photos:", e);
+    });
+
+  axios
+    .get("/api/topics")
+    .then((res) => {
+      dispatch({ type: ACTIONS.ALL_TOPICS, payload: { topics: res.data } });
+    })
+    .catch((e) => {
+      console.log("Error fetching topics:", e);
+    });
+}, []);
 ```
 
 ### 🔥 jQuery AJAX <a name="34"></a>
@@ -530,6 +1036,10 @@ function App() {
   );
 }
 ```
+
+### 🔥 example 1 with React QueryReact <a name="361"></a>
+
+Example - [Oasis-Backside](https://github.com/agpavlik/Oasis-Backside)
 
 ## 🔥 What is JSON? <a name="4"></a>
 
