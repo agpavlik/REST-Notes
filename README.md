@@ -8,26 +8,22 @@
   - [How REST APIs work?](#20)
   - [REST design principles](#21)
 - [Ways to fetch data](#3)
-
   - [XMLHttpRequest](#30)
   - [fetch() method](#31)
   - [Async-Await in fetch()](#32)
-
     - [example 1 with fetch()](#311)
     - [example 2 with fetch()](#312)
     - [example 3 with fetch()](#313)
     - [example 4 with fetch()](#314)
-
+    - [example 5 with fetch()](#315)
+    - [example 6 with fetch()](#316)
   - [Axios library](#33)
-
-    - [example 1 with Axios](#332)
+    - [example 1 with Axios](#331)
     - [example 2 with Axios](#332)
-
   - [jQuery AJAX](#34)
   - [Custom Hook](#35)
   - [React Query library](#36)
     - [example 1 with React Query](#361)
-
 - [What is JSON?](#4)
 - [What is CRUD?](#5)
 
@@ -149,7 +145,7 @@ function App() {
   useEffect(() => { //useEffect allows to fetch data as soon as the application loads and avoid a side effect
     fetch("url", {method:"GET"}) // method: "GET" - default, so we can ignore it
       .then((response) => response.json()); // Parse the response data as JSON
-      .then((data) => console.log(data)); // Process the response data here
+      .then((data) => console.log(data)); // Process the response data here. This is where typically can be updated component's state with the fetched data.
       .catch((err) => console.log(err.message)); // This method handle promise rejection
   }, []);
 
@@ -177,6 +173,24 @@ function App() { // It expects data from a form or whatever which will be send t
 }
 
 
+```
+
+### 🔥 Async-Await in fetch() <a name="32"></a>
+
+It is the preferred way of fetching the data from an API as it enables to remove .then() callbacks and return asynchronously resolved data. In the async block, we can use Await function to wait for promise.
+
+```javascript
+// fetch() with async/await
+async function fetchData() {
+  const response = await fetch("url");
+  //The `response` object provides the `status code` and `status text` via the `status` and `statusText` properties
+  console.log(response.status); //200
+  console.log(response.statusText); //OK
+
+  const data = await response.json();
+
+  return data;
+}
 ```
 
 ### 🔥 example 1 with fetch() <a name="311"></a>
@@ -577,21 +591,574 @@ function CitiesProvider({ children }) {
 }
 ```
 
-### 🔥 Async-Await in fetch() <a name="32"></a>
+### 🔥 example 5 with fetch() <a name="315"></a>
 
-It is the preferred way of fetching the data from an API as it enables to remove .then() callbacks and return asynchronously resolved data. In the async block, we can use Await function to wait for promise.
+step 1
+GET: Displaying user data
+
+We are fetching the list of users inside the useEffect.
+Displaying id, name, email, and website of each user.
+Have 2 action buttons for updating and deleting the user details.
 
 ```javascript
-// fetch() with async/await
-async function fetchData() {
-  const response = await fetch("url");
-  const data = await response.json();
+import { Button, EditableText } from "@blueprintjs/core";
+import { useEffect, useState } from "react";
+import "./App.css";
 
-  return data;
+function App() {
+  const [users, setUsers] = useState([]);
+
+  useEffect(() => {
+    fetch("https://jsonplaceholder.typicode.com/users")
+      .then((response) => response.json())
+      .then((json) => setUsers(json));
+  }, []);
+
+  return (
+    <div className="App">
+      <table class="bp4-html-table .modifier">
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Website</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((user) => (
+            <tr key={user.id}>
+              <td>{user.id}</td>
+              <td>{user.name}</td>
+              <td>
+                <EditableText value={user.email} />
+              </td>
+              <td>
+                <EditableText value={user.website} />
+              </td>
+              <td>
+                <Button intent="primary">Update</Button>
+                &nbsp;
+                <Button intent="danger">Delete</Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
+
+export default App;
 ```
 
-> Example 1
+step 2
+POST: Adding new user
+
+We have introduced 3 new local states to store name, email, and website.
+We have added input fields to read name, email, and website.
+We have a button with the label 'Add user', when clicked will call the addUser function.
+The addUser function will check if all the values are present, and will call the add user API, which uses the HTTP POST method.
+Once the user is added successfully, we append the user to the existing users and display a success message.
+
+```javascript
+import "./App.css";
+import { useEffect, useState } from "react";
+import {
+  Button,
+  EditableText,
+  InputGroup,
+  Toaster,
+  Position,
+} from "@blueprintjs/core";
+
+const AppToaster = Toaster.create({
+  position: Position.TOP,
+});
+
+function App() {
+  const [users, setUsers] = useState([]);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newWebsite, setNewWebsite] = useState("");
+
+  useEffect(() => {
+    fetch("https://jsonplaceholder.typicode.com/users")
+      .then((response) => response.json())
+      .then((json) => setUsers(json));
+  }, []);
+
+  const addUser = () => {
+    const name = newName.trim();
+    const email = newEmail.trim();
+    const website = newWebsite.trim();
+    if (name && email && website) {
+      fetch("https://jsonplaceholder.typicode.com/users", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          email,
+          website,
+        }),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          setUsers([...users, data]);
+          setNewName("");
+          setNewEmail("");
+          setNewWebsite("");
+          AppToaster.show({
+            message: "User added successfully",
+            intent: "success",
+            timeout: 3000,
+          });
+        });
+    }
+  };
+
+  return (
+    <div className="App">
+      <table class="bp4-html-table .modifier">
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Website</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((user) => (
+            <tr key={user.id}>
+              <td>{user.id}</td>
+              <td>{user.name}</td>
+              <td>
+                <EditableText value={user.email} />
+              </td>
+              <td>
+                <EditableText value={user.website} />
+              </td>
+              <td>
+                <Button intent="primary">Update</Button>
+                &nbsp;
+                <Button intent="danger">Delete</Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td></td>
+            <td>
+              <InputGroup
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Add name here..."
+              />
+            </td>
+            <td>
+              <InputGroup
+                placeholder="Add email here..."
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+              />
+            </td>
+            <td>
+              <InputGroup
+                placeholder="Add website here..."
+                value={newWebsite}
+                onChange={(e) => setNewWebsite(e.target.value)}
+              />
+            </td>
+            <td>
+              <Button intent="success" onClick={addUser}>
+                Add user
+              </Button>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
+
+export default App;
+```
+
+step 3
+
+PUT: Updating user data
+
+We have a function onChangeHandler, which will be called whenever the email and website are edited.
+When the user clicks on the update button we are calling the updateUser function and passing the user id to it.
+In the updateUser method, we are filtering the user based on the id passed and calling the API with the PUT method to update the user data to API.
+On successful update, we are displaying a success message.
+
+```javascript
+import "./App.css";
+import { useEffect, useState } from "react";
+import {
+  Button,
+  EditableText,
+  InputGroup,
+  Toaster,
+  Position,
+} from "@blueprintjs/core";
+
+const AppToaster = Toaster.create({
+  position: Position.TOP,
+});
+
+function App() {
+  const [users, setUsers] = useState([]);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newWebsite, setNewWebsite] = useState("");
+
+  useEffect(() => {
+    fetch("https://jsonplaceholder.typicode.com/users")
+      .then((response) => response.json())
+      .then((json) => setUsers(json));
+  }, []);
+
+  const addUser = () => {
+    const name = newName.trim();
+    const email = newEmail.trim();
+    const website = newWebsite.trim();
+    if (name && email && website) {
+      fetch("https://jsonplaceholder.typicode.com/users", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          email,
+          website,
+        }),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          setUsers([...users, data]);
+          setNewName("");
+          setNewEmail("");
+          setNewWebsite("");
+          AppToaster.show({
+            message: "User added successfully",
+            intent: "success",
+            timeout: 3000,
+          });
+        });
+    }
+  };
+
+  const updateUser = (id) => {
+    const user = users.find((user) => user.id === id);
+
+    fetch(`https://jsonplaceholder.typicode.com/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(user),
+      headers: {
+        "Content-type": "application/json; charset=UTF-8",
+      },
+    })
+      .then((response) => response.json())
+      .then(() => {
+        AppToaster.show({
+          message: "User updated successfully",
+          intent: "success",
+          timeout: 3000,
+        });
+      });
+  };
+
+  const onChangeHandler = (id, key, value) => {
+    setUsers((values) => {
+      return values.map((item) =>
+        item.id === id ? { ...item, [key]: value } : item
+      );
+    });
+  };
+
+  return (
+    <div className="App">
+      <table class="bp4-html-table .modifier">
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Website</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((user) => (
+            <tr key={user.id}>
+              <td>{user.id}</td>
+              <td>{user.name}</td>
+              <td>
+                <EditableText
+                  value={user.email}
+                  onChange={(value) => onChangeHandler(user.id, "email", value)}
+                />
+              </td>
+              <td>
+                <EditableText
+                  value={user.website}
+                  onChange={(value) =>
+                    onChangeHandler(user.id, "website", value)
+                  }
+                />
+              </td>
+              <td>
+                <Button intent="primary" onClick={() => updateUser(user.id)}>
+                  Update
+                </Button>
+                &nbsp;
+                <Button intent="danger">Delete</Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td></td>
+            <td>
+              <InputGroup
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Add name here..."
+              />
+            </td>
+            <td>
+              <InputGroup
+                placeholder="Add email here..."
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+              />
+            </td>
+            <td>
+              <InputGroup
+                placeholder="Add website here..."
+                value={newWebsite}
+                onChange={(e) => setNewWebsite(e.target.value)}
+              />
+            </td>
+            <td>
+              <Button intent="success" onClick={addUser}>
+                Add user
+              </Button>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
+
+export default App;
+```
+
+step 4
+
+DELETE: Deleting user
+
+We have added the deleteUser function, which will be called when the user clicks on the Delete button.
+The deleteUser function will receive the id of the user to be deleted and will call the API with the HTTP DELETE method.
+Once the user is deleted, it will remove the particular user from the users state and display a success message.
+
+```javascript
+import "./App.css";
+import { useEffect, useState } from "react";
+import {
+  Button,
+  EditableText,
+  InputGroup,
+  Toaster,
+  Position,
+} from "@blueprintjs/core";
+
+const AppToaster = Toaster.create({
+  position: Position.TOP,
+});
+
+function App() {
+  const [users, setUsers] = useState([]);
+  const [newName, setNewName] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newWebsite, setNewWebsite] = useState("");
+
+  useEffect(() => {
+    fetch("https://jsonplaceholder.typicode.com/users")
+      .then((response) => response.json())
+      .then((json) => setUsers(json));
+  }, []);
+
+  const addUser = () => {
+    const name = newName.trim();
+    const email = newEmail.trim();
+    const website = newWebsite.trim();
+    if (name && email && website) {
+      fetch("https://jsonplaceholder.typicode.com/users", {
+        method: "POST",
+        body: JSON.stringify({
+          name,
+          email,
+          website,
+        }),
+        headers: {
+          "Content-type": "application/json; charset=UTF-8",
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          setUsers([...users, data]);
+          setNewName("");
+          setNewEmail("");
+          setNewWebsite("");
+          AppToaster.show({
+            message: "User added successfully",
+            intent: "success",
+            timeout: 3000,
+          });
+        });
+    }
+  };
+
+  const updateUser = (id) => {
+    const user = users.find((user) => user.id === id);
+
+    fetch(`https://jsonplaceholder.typicode.com/users/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(user),
+      headers: {
+        "Content-type": "application/json; charset=UTF-8",
+      },
+    })
+      .then((response) => response.json())
+      .then(() => {
+        AppToaster.show({
+          message: "User updated successfully",
+          intent: "success",
+          timeout: 3000,
+        });
+      });
+  };
+
+  const deleteUser = (id) => {
+    fetch(`https://jsonplaceholder.typicode.com/posts/${id}`, {
+      method: "DELETE",
+    })
+      .then((response) => response.json())
+      .then(() => {
+        setUsers((values) => {
+          return values.filter((item) => item.id !== id);
+        });
+        AppToaster.show({
+          message: "User deleted successfully",
+          intent: "success",
+          timeout: 3000,
+        });
+      });
+  };
+
+  const onChangeHandler = (id, key, value) => {
+    setUsers((values) => {
+      return values.map((item) =>
+        item.id === id ? { ...item, [key]: value } : item
+      );
+    });
+  };
+
+  return (
+    <div className="App">
+      <table class="bp4-html-table .modifier">
+        <thead>
+          <tr>
+            <th>Id</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Website</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((user) => (
+            <tr key={user.id}>
+              <td>{user.id}</td>
+              <td>{user.name}</td>
+              <td>
+                <EditableText
+                  value={user.email}
+                  onChange={(value) => onChangeHandler(user.id, "email", value)}
+                />
+              </td>
+              <td>
+                <EditableText
+                  value={user.website}
+                  onChange={(value) =>
+                    onChangeHandler(user.id, "website", value)
+                  }
+                />
+              </td>
+              <td>
+                <Button intent="primary" onClick={() => updateUser(user.id)}>
+                  Update
+                </Button>
+                &nbsp;
+                <Button intent="danger" onClick={() => deleteUser(user.id)}>
+                  Delete
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td></td>
+            <td>
+              <InputGroup
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Add name here..."
+              />
+            </td>
+            <td>
+              <InputGroup
+                placeholder="Add email here..."
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+              />
+            </td>
+            <td>
+              <InputGroup
+                placeholder="Add website here..."
+                value={newWebsite}
+                onChange={(e) => setNewWebsite(e.target.value)}
+              />
+            </td>
+            <td>
+              <Button intent="success" onClick={addUser}>
+                Add user
+              </Button>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
+
+export default App;
+```
+
+### 🔥 example 6 with fetch() <a name="316"></a>
 
 ```javascript
 // To use async/await, first call async in the function. Then when making a request and expecting a response, add the await syntax in front of the function to wait until the promise settles with the result.
@@ -667,28 +1234,12 @@ const App = () => {
 export default App;
 ```
 
-> Example 2
-
-```javascript
-//The `response` object provides the `status code` and `status text` via the `status` and `statusText` properties
-async function fetchData() {
-  const response = await fetch("url");
-
-  console.log(response.status); //200
-  console.log(response.statusText); //OK
-
-  if (response.status === 200) {
-    let data = await response.text();
-
-    return data;
-  }
-}
-```
-
 ### 🔥 Axios library <a name="33"></a>
 
 Axios is an open-source library for making HTTP requests to servers. It is a promise-based approach. It supports all modern browsers and is used in real-time applications. It is easy to install using the npm package manager. With Axios, we can easily send asynchronous HTTP requests to REST APIs and perform create, read, update and delete operations.
 Unlike the Fetch API method, no option is required to declare the method. We simply attach the method to the instance and query it.
+
+Documentation - [Axios](https://axios-http.com/docs/intro)
 
 ```javascript
 function App() {
