@@ -21,7 +21,9 @@
   - [async/await with Axios](#330)
     - [example 1 with Axios](#331)
     - [example 2 with Axios](#332)
+    - [example 3 with Axios](#333)
   - [jQuery AJAX](#34)
+    - [example 1 with jQuery AJAX](#341)
   - [Custom Hook](#35)
   - [React Query library](#36)
     - [example 1 with React Query](#361)
@@ -1274,6 +1276,15 @@ export default App;
 Axios is an open-source library for making HTTP requests to servers. It is a promise-based approach. It supports all modern browsers and is used in real-time applications. It is easy to install using the npm package manager. With Axios, we can easily send asynchronous HTTP requests to REST APIs and perform create, read, update and delete operations.
 Unlike the Fetch API method, no option is required to declare the method. We simply attach the method to the instance and query it.
 
+Features that make Axios more popular than Fetch:
+
+- Axios transforms JSON data automatically.
+- It allows cancelling requests and request timeout.
+- It can intercept HTTP requests.
+- It has built-in XSRF protection.
+- It also supports older browsers.
+- It has a very clean and precise syntax.
+
 Documentation - [Axios](https://axios-http.com/docs/intro)
 
 ```javascript
@@ -1294,122 +1305,56 @@ axios.post('/user', {
     firstName: 'Fred',
     lastName: 'Flintstone'
   })
-  .then(function (response) {
-    console.log(response);
+  .then(response => {
+    console.log(response.data);
   })
-  .catch(function (error) {
+  .catch(error => {
     console.log(error);
   });
 ```
 
-```javascript
-import axios from "axios";
+You can perform the GET request on any number of APIs of your choice by wrapping it all inside Axios.all(), just like in Promise.all(). It then calls them as an array and returns a promise. Axios also allows you to spread the response.
 
-async function fetchData() {
-  const response = await axios.get("url");
-  const data = response.data;
-  return data;
-}
+```javascript
+ // multiple concurrent GET requests
+const firstRequest = axios.get("url-1");
+const secondRequest = axios.get("url-2");
+const thirdRequest = axios.get("url-3");
+// Axios has a built-in function called .all() that works just as Promise.all()
+axios.all([firstRequest, secondRequest, thirdRequest]).then(
+  axios.spread((...res) => {
+     const firstRes = res[0];
+     const secondRes = res[1];
+     const thirdRes = res[2];
+     console.log(firstRes, secondRes, thirdRes);
+  })
+)
+.catch((error) => console.log(error);
+);
+
 ```
 
-```javascript
-import axios from "axios";
+When using Axios in React, error handling is an important aspect of handling API requests. Axios provides several ways to handle errors. Here is an example using promises:
 
+```javascript
 axios
-  .get("APIURL")
+  .get("url")
   .then((response) => {
-    const responseData = response.data; // Access the response data
-    // Process the response data here
+    console.log(response.data);
   })
   .catch((error) => {
-    // Handle error here
+    if (error.response) {
+      // The request was made and the server responded with a status code outside the range of 2xx
+      console.error("Status:", error.response.status);
+      console.error("Data:", error.response.data);
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error("No response received:", error.request);
+    } else {
+      // Something happened in setting up the request that triggered an error
+      console.error("Error:", error.message);
+    }
   });
-```
-
-> Example 1
-
-```javascript
-// GET request
-useEffect(() => {
-  client.get("?_limit=10").then((response) => {
-    setPosts(response.data);
-  });
-}, []);
-
-// POST request
-const addPosts = (title, body) => {
-  client
-    .post("", {
-      title: title,
-      body: body,
-    })
-    .then((response) => {
-      setPosts((posts) => [response.data, ...posts]);
-    });
-};
-
-// DELETE request
-const deletePost = (id) => {
-  client.delete(`${id}`);
-  setPosts(
-    posts.filter((post) => {
-      return post.id !== id;
-    })
-  );
-};
-```
-
-> Example 2
-
-We can use async/await to write less code and avoid the .then() chaining. When we use async/await, all of our Axios requests will look like this:
-
-```javascript
-import React, { useState, useEffect } from 'react';
-
-const App = () => {
-   const [title, setTitle] = useState('');
-   const [body, setBody] = useState('');
-   const [posts, setPosts] = useState([]);
-
-   // GET with Axios
-   useEffect(() => {
-      const fetchPost = async () => {
-         let response = await client.get('?_limit=10');
-         setPosts(response.data);
-      };
-      fetchPost();
-   }, []);
-
-   // Delete with Axios
-   const deletePost = async (id) => {
-      await client.delete(`${id}`);
-      setPosts(
-         posts.filter((post) => {
-            return post.id !== id;
-         })
-      );
-   };
-
-   // Post with Axios
-   const addPosts = async (title, body) => {
-      let response = await client.post('', {
-         title: title,
-         body: body,
-      });
-      setPosts((posts) => [response.data, ...posts]);
-   };
-
-   const handleSubmit = (e) => {
-      e.preventDefault();
-      addPosts(title, body);
-   };
-
-   return (
-      // ...
-   );
-};
-
-export default App;
 ```
 
 ### 🔥 async/await with Axios <a name="330"></a>
@@ -1525,13 +1470,63 @@ useEffect(() => {
 }, []);
 ```
 
+### 🔥 example 3 with Axios <a name="333"></a>
+
+```javascript
+import React, { useState, useEffect } from 'react';
+
+const App = () => {
+   const [title, setTitle] = useState('');
+   const [body, setBody] = useState('');
+   const [posts, setPosts] = useState([]);
+
+   // GET with Axios
+   useEffect(() => {
+      const fetchPost = async () => {
+         let response = await client.get('?_limit=10');
+         setPosts(response.data);
+      };
+      fetchPost();
+   }, []);
+
+   // Delete with Axios
+   const deletePost = async (id) => {
+      await client.delete(`${id}`);
+      setPosts(
+         posts.filter((post) => {
+            return post.id !== id;
+         })
+      );
+   };
+
+   // Post with Axios
+   const addPosts = async (title, body) => {
+      let response = await client.post('', {
+         title: title,
+         body: body,
+      });
+      setPosts((posts) => [response.data, ...posts]);
+   };
+
+   const handleSubmit = (e) => {
+      e.preventDefault();
+      addPosts(title, body);
+   };
+
+   return (
+      // ...
+   );
+};
+
+export default App;
+```
+
 ### 🔥 jQuery AJAX <a name="34"></a>
 
-jQuery is a library used to make JavaScript
-programming simple and if you are using it
-then with the help of the $.ajax() method you
-can make asynchronous HTTP requests to get
-data.
+jQuery is a fast, small, and feature-rich JavaScript library. It simplifies things like HTML document traversal and manipulation, event handling, and animation. AJAX (Asynchronous JavaScript and XML) is a technique for creating fast and dynamic web pages. jQuery provides easy-to-use methods for making AJAX requests. With the help of the $.ajax() method you can make asynchronous HTTP requests to get data. While it's generally recommended to avoid mixing jQuery with React due to potential conflicts and complexity, it's still possible to use jQuery within a React application. However, it's crucial to be cautious and understand the implications.
+Mixing jQuery with React can lead to conflicts, especially when manipulating the DOM directly with jQuery alongside React's virtual DOM. It's generally recommended to avoid direct DOM manipulation when working with React.
+
+Documentation - [jQuery](https://api.jquery.com/category/ajax/global-ajax-event-handlers/)
 
 ```javascript
 $.ajax({
@@ -1545,6 +1540,49 @@ $.ajax({
     // Handle error here
   },
 });
+```
+
+### 🔥 example 1 with jQuery AJAX <a name="341"></a>
+
+```javascript
+import React, { useState, useEffect } from "react";
+
+function MyComponent() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetchData();
+  }, []); // Runs once on component mount
+
+  const fetchData = () => {
+    // Fetch data using jQuery AJAX
+    $.ajax({
+      url: "https://api.example.com/data",
+      method: "GET",
+      success: function (response) {
+        setData(response);
+      },
+      error: function (xhr, status, error) {
+        console.error("Error fetching data:", error);
+      },
+    });
+  };
+
+  return (
+    <div>
+      {/* Display fetched data */}
+      {data && (
+        <ul>
+          {data.map((item) => (
+            <li key={item.id}>{item.name}</li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+export default MyComponent;
 ```
 
 ### 🔥 Custom Hook <a name="35"></a>
