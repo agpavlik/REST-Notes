@@ -10,7 +10,7 @@
 - [Ways to fetch data](#3)
   - [XMLHttpRequest](#30)
   - [fetch() method](#31)
-  - [Async-Await in fetch()](#32)
+  - [async/await with fetch()](#32)
     - [example 1 with fetch()](#311)
     - [example 2 with fetch()](#312)
     - [example 3 with fetch()](#313)
@@ -18,6 +18,7 @@
     - [example 5 with fetch()](#315)
     - [example 6 with fetch()](#316)
   - [Axios library](#33)
+  - [async/await with Axios](#330)
     - [example 1 with Axios](#331)
     - [example 2 with Axios](#332)
   - [jQuery AJAX](#34)
@@ -175,14 +176,16 @@ function App() { // It expects data from a form or whatever which will be send t
 
 ```
 
-### 🔥 Async-Await in fetch() <a name="32"></a>
+### 🔥 async/await with fetch() <a name="32"></a>
 
-It is the preferred way of fetching the data from an API as it enables to remove .then() callbacks and return asynchronously resolved data. In the async block, we can use Await function to wait for promise.
+It is the preferred way of fetching the data from an API as it enables to remove .then() callbacks and return asynchronously resolved data. Using async/await syntax with the fetch() method in React allows for cleaner and more readable asynchronous code compared to using .then() and .catch() with Promises.
 
 ```javascript
 // fetch() with async/await
 async function fetchData() {
-  const response = await fetch("url");
+  // The async keyword is used to define an asynchronous function.
+  const response = await fetch("url"); // The await keyword is used to pause the execution of an async function until the Promise is settled (either resolved or rejected).
+
   //The `response` object provides the `status code` and `status text` via the `status` and `statusText` properties
   console.log(response.status); //200
   console.log(response.statusText); //OK
@@ -190,6 +193,38 @@ async function fetchData() {
   const data = await response.json();
 
   return data;
+}
+```
+
+```javascript
+// 'Async/await' allows for centralized error handling using 'try...catch', making it easier to manage errors within the asynchronous code block.
+
+// GET
+async function fetchData() {
+  try {
+    const response = await fetch(url [, options]);
+    const data = await response.json();
+    // do something with the data
+  } catch (error) {
+    // handle error
+  }
+}
+
+// POST
+async function postData(url, data) {
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    const result = await response.json();
+    console.log(result); // handle successful response
+  } catch (error) {
+    console.error('Error:', error); // handle error
+  }
 }
 ```
 
@@ -1242,12 +1277,29 @@ Unlike the Fetch API method, no option is required to declare the method. We sim
 Documentation - [Axios](https://axios-http.com/docs/intro)
 
 ```javascript
+// GET request
 function App() {
   useEffect(() => {
-    axios.get("url").then((response) => console.log(response.data));
+    axios.get("url")
+    .then((response) => console.log(response.data)); // handle success
+    .catch((error) => console.log(error)); // handle error
+    .finally(function(){}) // always executed
   }, []);
   return data;
 }
+
+// POST request
+
+axios.post('/user', {
+    firstName: 'Fred',
+    lastName: 'Flintstone'
+  })
+  .then(function (response) {
+    console.log(response);
+  })
+  .catch(function (error) {
+    console.log(error);
+  });
 ```
 
 ```javascript
@@ -1360,7 +1412,36 @@ const App = () => {
 export default App;
 ```
 
-> Example 3
+### 🔥 async/await with Axios <a name="330"></a>
+
+```javascript
+const MyComponent = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const response = await axios.get("https://api.example.com/data");
+      setData(response.data);
+      setLoading(false);
+    } catch (error) {
+      setError(error);
+      setLoading(false);
+    }
+  };
+
+  // Render logic...
+};
+
+export default MyComponent;
+```
+
+### 🔥 example 1 with Axios <a name="331"></a>
 
 ```javascript
 //App.js
@@ -1404,19 +1485,15 @@ function App() {
 export default App;
 ```
 
-### 🔥 example 1 with Axios <a name="331"></a>
-
 ### 🔥 example 2 with Axios <a name="332"></a>
 
 Example - [Photolabs](https://github.com/agpavlik/Photolabs)
 
 ```javascript
 const getPhotosByTopic = (topicId) => {
-  console.log("topicId", topicId);
   axios
     .get(`/api/topics/photos/${topicId}`)
     .then((res) => {
-      console.log("res", res);
       dispatch({
         type: ACTIONS.GET_PHOTOS_BY_TOPIC,
         payload: { photos: res.data },
