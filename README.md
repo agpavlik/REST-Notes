@@ -25,6 +25,12 @@
   - [jQuery AJAX](#34)
     - [example 1 with jQuery AJAX](#341)
   - [Custom Hook](#35)
+    - [example 1 with custom hook](#351)
+    - [example 2 with custom hook](#352)
+    - [example 3 with custom hook](#353)
+    - [example 4 with custom hook (Redux)](#354)
+    - [example 5 with custom hook](#355)
+    - [example 6 with custom hook](#356)
   - [React Query library](#36)
     - [example 1 with React Query](#361)
 - [What is JSON?](#4)
@@ -1587,7 +1593,87 @@ export default MyComponent;
 
 ### 🔥 Custom Hook <a name="35"></a>
 
-It is a React component
+A custom hook for fetching data in React is a reusable function that encapsulates the logic for making HTTP requests and managing the state related to the fetching process. Custom hooks in React are a powerful feature that allows you to extract and share logic across multiple components, making your code more modular, readable, and maintainable.
+
+In the context of fetching data, a custom hook typically uses the useState and useEffect hooks provided by React to manage state and perform side effects respectively. It abstracts away the repetitive code involved in fetching data from an API, handling loading states, errors, and updating the component's state with the fetched data.
+
+Here are the key components of a custom hook for fetching data:
+
+- State Management: The hook maintains state variables to hold the fetched data, loading state, and any errors that occur during the fetch process.
+- Side Effects: The hook utilizes the useEffect hook to perform the fetch operation when the component mounts or when the dependencies (such as the URL or options) change.
+- Error Handling: It includes error handling logic to catch and handle any errors that occur during the fetch operation, updating the error state accordingly.
+- Aborting Fetch Requests: Optionally, the hook can include cleanup logic to cancel any ongoing fetch requests when the component unmounts or when the fetch operation is no longer needed. This helps prevent memory leaks and unnecessary network requests.
+- Reusability: The custom hook can be used in multiple components across your application, providing a consistent and efficient way to fetch data from different endpoints.
+
+```javascript
+import { useState, useEffect } from "react";
+
+const useFetch = (url, options = {}) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        const jsonData = await response.json();
+        setData(jsonData);
+        setError(null);
+      } catch (error) {
+        setError(error);
+        setData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+
+    // Clean-up function
+    return () => {
+      // Cancel ongoing fetch request if component unmounts before completion
+      controller.abort();
+    };
+  }, [url, options]);
+
+  return { data, loading, error };
+};
+
+export default useFetch;
+
+// Usage
+import React from 'react';
+import useFetch from './useFetch';
+
+const MyComponent = () => {
+  const { data, loading, error } = useFetch('https://api.example.com/data');
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
+
+  return (
+    <div>
+      {/* Render fetched data */}
+      {data && <div>{/* Your rendering logic here */}</div>}
+    </div>
+  );
+};
+
+export default MyComponent;
+
+```
+
+### 🔥 example 1 with custom hook <a name="351"></a>
 
 ```javascript
 // variant 1 with axios library
@@ -1666,6 +1752,208 @@ const App = () => {
   );
 };
 ```
+
+### 🔥 example 2 with custom hook <a name="352"></a>
+
+```javascript
+import { useState, useEffect } from "react";
+
+export const useFetch = (url) => {
+  const [data, setData] = useState(null);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsPending(true);
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(response.statusText);
+        const json = await response.json();
+        setIsPending(false);
+        setData(json);
+        setError(null);
+      } catch (error) {
+        setError(`${error} Could not Fetch Data `);
+        setIsPending(false);
+      }
+    };
+    fetchData();
+  }, [url]);
+  return { data, isPending, error };
+};
+```
+
+### 🔥 example 3 with custom hook <a name="353"></a>
+
+```javascript
+import { useState, useEffect } from "react";
+
+export const useFetch = (url, ref, initialValue) => {
+  const [data, setData] = useState(initialValue);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (ref.current) {
+      (async () => {
+        // Immediately Invoked Function Expression - The whole code block for getting the data is called as soon as it’s defined
+        try {
+          const res = await fetch(url);
+          const resJson = await res.json();
+          setData(resJson);
+        } catch (err) {
+          setError(err);
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }
+    return () => {
+      ref.current = false;
+    };
+  }, [url, ref]);
+  return { loading, data, error };
+};
+
+// Use the custom Hook inside the component
+import React, { useRef } from "react";
+import { useFetch } from "./useFetch";
+
+const UserList = () => {
+  // To prevent from fetching data on unmounted component, we can use another Hook, useRef. The purpose is that it should run code within useEffect only if the component is mounted to the view.
+  const isComponentMounted = useRef(true);
+
+  const { data, loading, error } = useFetch(
+    "https://jsonplaceholder.typicode.com/users",
+    isComponentMounted,
+    []
+  );
+
+  return (
+    <div>
+      {loading ? (
+        <div>Loading data...</div>
+      ) : (
+        data.map((user) => (
+          <div key={user.id}>
+            <h3>{user.name}</h3>
+            <p>{user.email}</p>
+          </div>
+        ))
+      )}
+    </div>
+  );
+};
+
+export default UserList;
+```
+
+### 🔥 example 4 with custom hook (Redux) <a name="354"></a>
+
+```javascript
+// GET
+const useFetchData = (url) => {
+  const dispatch = useDispatch();
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiData, setApiData] = useState(null);
+  const [serverError, setServerError] = useState(null);
+
+  useEffect(() => {
+    setIsLoading(true);
+    const fetchData = async () => {
+      try {
+        dispatch(fetchApiData());
+        const resp = await axios.get(url);
+        const data = await resp?.data;
+
+        dispatch(fetchApiSuccess(data));
+        setApiData(data);
+        setIsLoading(false);
+      } catch (error) {
+        setServerError(error);
+        dispatch(fetchApiFailure());
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [dispatch, url]);
+
+  return { isLoading, apiData, serverError };
+};
+
+// POST / PUT / DELETE
+const useFetch = (method, url, body) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [apiData, setApiData] = useState(null);
+  const [serverError, setServerError] = useState(null);
+
+  useEffect(() => {
+    setIsLoading(true);
+    const fetchData = async () => {
+      try {
+        const resp = await axios({
+          method: method,
+          url: url,
+          data: body,
+        });
+        const data = await resp?.data;
+
+        setApiData(data);
+        setIsLoading(false);
+      } catch (error) {
+        setServerError(error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [url, method, body]);
+
+  return { isLoading, apiData, serverError };
+};
+
+// Usage
+import { StrictMode } from "react";
+import ReactDOM from "react-dom";
+import useFetch from "./useFetch";
+
+const App = () => {
+  const { isLoading, serverError, apiData } = useFetch(
+    "https://jsonplaceholder.typicode.com/posts/1"
+  );
+  // Usage will be the same for POST. Only thing that is changing is the function definition:
+  //  const { isLoading, serverError, apiData } = useFetch(
+  //   "GET",
+  //   "https://jsonplaceholder.typicode.com/posts/1",
+  //   {}
+  // );
+  return (
+    <div>
+      <h2>API data</h2>
+      {isLoading && <span>Loading.....</span>}
+      {!isLoading && serverError ? (
+        <span>Error in fetching data ...</span>
+      ) : (
+        <span>{JSON.stringify(apiData)}</span>
+      )}
+    </div>
+  );
+};
+
+const rootElement = document.getElementById("root");
+
+ReactDOM.render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+  rootElement
+);
+```
+
+### 🔥 example 5 with custom hook <a name="355"></a>
+
+### 🔥 example 6 with custom hook <a name="356"></a>
 
 ### 🔥 React Query library <a name="36"></a>
 
